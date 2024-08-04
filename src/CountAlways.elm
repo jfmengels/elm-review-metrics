@@ -7,10 +7,10 @@ module CountAlways exposing (rule)
 -}
 
 import Elm.Syntax.Expression exposing (Expression(..))
-import Elm.Syntax.Node as Node exposing (Node)
+import Elm.Syntax.Node as Node exposing (Node(..))
 import Elm.Syntax.Range exposing (Range)
 import Json.Encode as Encode
-import Review.ModuleNameLookupTable exposing (ModuleNameLookupTable)
+import Review.ModuleNameLookupTable as ModuleNameLookupTable exposing (ModuleNameLookupTable)
 import Review.Rule as Rule exposing (Rule)
 
 
@@ -127,8 +127,37 @@ foldProjectContexts new previous =
 expressionVisitor : Node Expression -> ModuleContext -> ModuleContext
 expressionVisitor node context =
     case Node.value node of
+        FunctionOrValue _ "always" ->
+            if not (List.member (Node.range node) context.rangesToIgnore) && isFromBasics context.lookupTable node then
+                { context | noArgs = context.noArgs + 1 }
+
+            else
+                context
+
+        Application (((Node alwaysRange (FunctionOrValue _ "always")) as alwaysNode) :: _ :: restOfArgs) ->
+            if isFromBasics context.lookupTable alwaysNode then
+                if List.isEmpty restOfArgs then
+                    { context
+                        | rangesToIgnore = alwaysRange :: context.rangesToIgnore
+                        , singleArg = context.singleArg + 1
+                    }
+
+                else
+                    { context
+                        | rangesToIgnore = alwaysRange :: context.rangesToIgnore
+                        , bothArgs = context.bothArgs + 1
+                    }
+
+            else
+                context
+
         _ ->
             context
+
+
+isFromBasics : ModuleNameLookupTable -> Node a -> Bool
+isFromBasics lookupTable node =
+    ModuleNameLookupTable.moduleNameFor lookupTable node == Just [ "Basics" ]
 
 
 dataExtractor : ProjectContext -> Encode.Value
