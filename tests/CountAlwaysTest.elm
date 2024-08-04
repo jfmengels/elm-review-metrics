@@ -11,21 +11,15 @@ all =
         [ test "should not report an error when REPLACEME" <|
             \() ->
                 """module A exposing (..)
-a = 1
+a = List.indexedMap always list
+b = List.map (always 1) list
+c = always 1 2
 """
                     |> Review.Test.run rule
-                    |> Review.Test.expectNoErrors
-        , test "should report an error when REPLACEME" <|
-            \() ->
-                """module A exposing (..)
-a = 1
+                    |> Review.Test.expectDataExtract """
+{ "noArgs": 1
+, "singleArg": 2
+, "bothArgs": 3
+}
 """
-                    |> Review.Test.run rule
-                    |> Review.Test.expectErrors
-                        [ Review.Test.error
-                            { message = "REPLACEME"
-                            , details = [ "REPLACEME" ]
-                            , under = "REPLACEME"
-                            }
-                        ]
         ]

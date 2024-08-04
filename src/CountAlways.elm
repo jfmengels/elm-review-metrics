@@ -8,6 +8,7 @@ module CountAlways exposing (rule)
 
 import Elm.Syntax.Expression exposing (Expression)
 import Elm.Syntax.Node as Node exposing (Node)
+import Json.Encode as Encode
 import Review.Rule as Rule exposing (Rule)
 
 
@@ -54,17 +55,22 @@ rule =
             , fromModuleToProject = fromModuleToProject
             , foldProjectContexts = foldProjectContexts
             }
-        -- Enable this if modules need to get information from other modules
-        -- |> Rule.withContextFromImportedModules
+        |> Rule.withDataExtractor dataExtractor
         |> Rule.fromProjectRuleSchema
 
 
 type alias ProjectContext =
-    {}
+    { noArgs : Int
+    , singleArg : Int
+    , bothArgs : Int
+    }
 
 
 type alias ModuleContext =
-    {}
+    { noArgs : Int
+    , singleArg : Int
+    , bothArgs : Int
+    }
 
 
 moduleVisitor : Rule.ModuleRuleSchema schema ModuleContext -> Rule.ModuleRuleSchema { schema | hasAtLeastOneVisitor : () } ModuleContext
@@ -75,14 +81,20 @@ moduleVisitor schema =
 
 initialProjectContext : ProjectContext
 initialProjectContext =
-    {}
+    { noArgs = 0
+    , singleArg = 0
+    , bothArgs = 0
+    }
 
 
 fromProjectToModule : Rule.ContextCreator ProjectContext ModuleContext
 fromProjectToModule =
     Rule.initContextCreator
-        (\projectContext ->
-            {}
+        (\_ ->
+            { noArgs = 0
+            , singleArg = 0
+            , bothArgs = 0
+            }
         )
 
 
@@ -90,13 +102,19 @@ fromModuleToProject : Rule.ContextCreator ModuleContext ProjectContext
 fromModuleToProject =
     Rule.initContextCreator
         (\moduleContext ->
-            {}
+            { noArgs = moduleContext.noArgs
+            , singleArg = moduleContext.singleArg
+            , bothArgs = moduleContext.bothArgs
+            }
         )
 
 
 foldProjectContexts : ProjectContext -> ProjectContext -> ProjectContext
 foldProjectContexts new previous =
-    {}
+    { noArgs = new.noArgs + previous.noArgs
+    , singleArg = new.singleArg + previous.singleArg
+    , bothArgs = new.bothArgs + previous.bothArgs
+    }
 
 
 expressionVisitor : Node Expression -> ModuleContext -> ( List (Rule.Error {}), ModuleContext )
@@ -104,3 +122,12 @@ expressionVisitor node context =
     case Node.value node of
         _ ->
             ( [], context )
+
+
+dataExtractor : ProjectContext -> Encode.Value
+dataExtractor context =
+    Encode.object
+        [ ( "noArgs", Encode.int context.noArgs )
+        , ( "singleArg", Encode.int context.singleArg )
+        , ( "bothArgs", Encode.int context.bothArgs )
+        ]
