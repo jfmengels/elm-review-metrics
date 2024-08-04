@@ -18,8 +18,8 @@ c = always 1 2
                     |> Review.Test.run rule
                     |> Review.Test.expectDataExtract """
 { "noArgs": 1
-, "singleArg": 2
-, "bothArgs": 3
+, "singleArg": 1
+, "bothArgs": 1
 }
 """
         ]
