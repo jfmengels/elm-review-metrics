@@ -6,7 +6,7 @@ module CountAlways exposing (rule)
 
 -}
 
-import Elm.Syntax.Expression exposing (Expression)
+import Elm.Syntax.Expression exposing (Expression(..))
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Range exposing (Range)
 import Json.Encode as Encode
@@ -80,7 +80,7 @@ type alias ModuleContext =
 moduleVisitor : Rule.ModuleRuleSchema schema ModuleContext -> Rule.ModuleRuleSchema { schema | hasAtLeastOneVisitor : () } ModuleContext
 moduleVisitor schema =
     schema
-        |> Rule.withExpressionEnterVisitor expressionVisitor
+        |> Rule.withExpressionEnterVisitor (\expr ctx -> ( [], expressionVisitor expr ctx ))
 
 
 initialProjectContext : ProjectContext
@@ -124,11 +124,11 @@ foldProjectContexts new previous =
     }
 
 
-expressionVisitor : Node Expression -> ModuleContext -> ( List (Rule.Error {}), ModuleContext )
+expressionVisitor : Node Expression -> ModuleContext -> ModuleContext
 expressionVisitor node context =
     case Node.value node of
         _ ->
-            ( [], context )
+            context
 
 
 dataExtractor : ProjectContext -> Encode.Value
