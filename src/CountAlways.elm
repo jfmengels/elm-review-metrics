@@ -9,6 +9,7 @@ module CountAlways exposing (rule)
 import Elm.Syntax.Expression exposing (Expression)
 import Elm.Syntax.Node as Node exposing (Node)
 import Json.Encode as Encode
+import Review.ModuleNameLookupTable exposing (ModuleNameLookupTable)
 import Review.Rule as Rule exposing (Rule)
 
 
@@ -67,7 +68,8 @@ type alias ProjectContext =
 
 
 type alias ModuleContext =
-    { noArgs : Int
+    { lookupTable : ModuleNameLookupTable
+    , noArgs : Int
     , singleArg : Int
     , bothArgs : Int
     }
@@ -90,12 +92,14 @@ initialProjectContext =
 fromProjectToModule : Rule.ContextCreator ProjectContext ModuleContext
 fromProjectToModule =
     Rule.initContextCreator
-        (\_ ->
-            { noArgs = 0
+        (\lookupTable _ ->
+            { lookupTable = lookupTable
+            , noArgs = 0
             , singleArg = 0
             , bothArgs = 0
             }
         )
+        |> Rule.withModuleNameLookupTable
 
 
 fromModuleToProject : Rule.ContextCreator ModuleContext ProjectContext
